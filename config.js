@@ -23,67 +23,84 @@ const emojis = {
 
 // Role definitions with base ingredients
 const roles = {
+  starter: {
+    id: 'join_starter',
+    name: 'Starter',
+    emoji: emojis.celebrationcake,
+    baseIngredients: [
+      { emoji: emojis.blueberry, count: 1 }
+    ],
+    maxMembers: 1,
+    tip: 'Also needs the Celebration Cake Recipe',
+    scalingFactor: 0 // No scaling for starter
+  },
   batterer: {
     id: 'join_batterer',
     name: 'Batterer',
     emoji: emojis.cakebatter,
     baseIngredients: [
-      { emoji: emojis.egg, count: 3 },
       { emoji: emojis.butter, count: 3 },
-      { emoji: emojis.milk, count: 1 }
+      { emoji: emojis.egg, count: 3 },
+      { emoji: emojis.flour, count: 3 }
     ],
-    scalingFactor: 0.5 // How much ingredients increase per additional person
+    maxMembers: 3,
+    tip: 'Lock away your milk so you don\'t accidentally use it!',
+    scalingFactor: 0 // Evenly divided among all batterers
   },
   froster: {
     id: 'join_froster',
     name: 'Froster',
     emoji: emojis.frosting,
     baseIngredients: [
-      { emoji: emojis.egg, count: 1 },
-      { emoji: emojis.butter, count: 1 },
-      { emoji: emojis.flour, count: 1 }
+      { emoji: emojis.milk, count: 1 },
+      { emoji: emojis.butter, count: 1 }
     ],
-    scalingFactor: 0.5
+    maxMembers: 1,
+    tip: 'Lock away your flour so you don\'t accidentally use it!',
+    scalingFactor: 0 // No scaling for froster
   },
   fruitfroster: {
     id: 'join_fruitfroster',
     name: 'Fruit Froster',
     emoji: emojis.fruitfrosting,
     baseIngredients: [
-      { emoji: emojis.star + emojis.apple, count: 2 },
-      { emoji: emojis.star + emojis.blueberry, count: 2 }
+      { emoji: emojis.apple + '/' + emojis.blueberry, count: 3 },
+      { emoji: emojis.sugar, count: 3 }
     ],
-    scalingFactor: 0.5
+    maxMembers: 3,
+    scalingFactor: 0 // Evenly divided among all fruit frosters
   },
   leafer: {
     id: 'join_leafer',
     name: 'Leafer',
     emoji: emojis.groundsweetleaf,
     baseIngredients: [
-      { emoji: emojis.sweetleaf, count: 2 }
+      { emoji: emojis.sweetleaf, count: 4 }
     ],
-    scalingFactor: 0.5
+    maxMembers: 4,
+    scalingFactor: 0 // Evenly divided among all leafers
   },
   spreader: {
     id: 'join_spreader',
     name: 'Spreader',
     emoji: emojis.jelliedcakelayer,
-    baseIngredients: [
-      { emoji: emojis.sugar, count: 2 }
-    ],
-    scalingFactor: 0.5
+    baseIngredients: [],
+    maxMembers: 3,
+    scalingFactor: 0
   },
   baker: {
     id: 'join_baker',
     name: 'Baker',
     emoji: emojis.cakelayer,
     baseIngredients: [],
+    maxMembers: 3,
     scalingFactor: 0
   }
 };
 
 // Mapping from button IDs to role names
 const roleMap = {
+  join_starter: 'Starter',
   join_batterer: 'Batterer',
   join_froster: 'Froster',
   join_fruitfroster: 'Fruit Froster',

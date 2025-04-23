@@ -3,6 +3,7 @@ const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const embedBuilder = require('./utils/embedBuilder');
 const roleManager = require('./utils/roleManager');
 const config = require('./config');
+const db = require('./utils/database');
 
 // Initialize client with required intents
 const client = new Client({
@@ -25,9 +26,17 @@ if (!token) {
 // This will store active cake parties by guild/channel
 const activeParties = new Map();
 
-client.on('ready', () => {
+client.on('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
   console.log(`Serving in ${client.guilds.cache.size} guilds`);
+  
+  // Initialize database
+  try {
+    await db.initDatabase();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Error initializing database:', error);
+  }
   
   // Set bot activity
   client.user.setActivity('!cakehelp', { type: 'PLAYING' });
@@ -52,8 +61,20 @@ client.on('messageCreate', async message => {
   if (message.content.startsWith('!startcakeparty')) {
     try {
       // Check if there's already an active party in this channel
-      const partyKey = `${message.guild.id}-${message.channel.id}`;
+      const guildId = message.guild.id;
+      const channelId = message.channel.id;
+      const partyKey = `${guildId}-${channelId}`;
+      
+      // Check memory cache first (faster)
       if (activeParties.has(partyKey)) {
+        return message.reply('There\'s already an active cake party in this channel! Join that one or end it first.');
+      }
+      
+      // Also check database for existing parties
+      const existingParty = await roleManager.loadPartyData(guildId, channelId);
+      if (existingParty) {
+        // We found an existing party in the database, load it into memory
+        activeParties.set(partyKey, existingParty);
         return message.reply('There\'s already an active cake party in this channel! Join that one or end it first.');
       }
       
@@ -77,7 +98,7 @@ client.on('messageCreate', async message => {
       }
       
       // Create new party data with specified cake count
-      const partyData = roleManager.createNewParty(parsedCount);
+      const partyData = await roleManager.createNewParty(guildId, channelId, parsedCount);
       activeParties.set(partyKey, partyData);
       
       // Create and send party signup message
@@ -88,9 +109,9 @@ client.on('messageCreate', async message => {
       });
       
       // Store message ID with party data for reference
-      partyData.messageId = sentMessage.id;
+      await roleManager.updatePartyMessageId(partyData, sentMessage.id);
       
-      console.log(`Started new cake party in guild ${message.guild.id}, channel ${message.channel.id} with ${parsedCount} cakes`);
+      console.log(`Started new cake party in guild ${guildId}, channel ${channelId} with ${parsedCount} cakes`);
     } catch (error) {
       console.error('Error starting cake party:', error);
       message.channel.send('Sorry, I encountered an error starting the cake party. Please try again.');
@@ -100,21 +121,38 @@ client.on('messageCreate', async message => {
   // Process end cake party command
   if (message.content === '!endcake') {
     try {
-      const partyKey = `${message.guild.id}-${message.channel.id}`;
-      if (!activeParties.has(partyKey)) {
-        return message.reply('There\'s no active cake party in this channel to end.');
+      const guildId = message.guild.id;
+      const channelId = message.channel.id;
+      const partyKey = `${guildId}-${channelId}`;
+      
+      // First check memory cache
+      let partyData = null;
+      if (activeParties.has(partyKey)) {
+        partyData = activeParties.get(partyKey);
+      } else {
+        // Try to load from database
+        partyData = await roleManager.loadPartyData(guildId, channelId);
+        if (partyData) {
+          // Found in database but not in memory, add to memory
+          activeParties.set(partyKey, partyData);
+        }
       }
       
-      const partyData = activeParties.get(partyKey);
+      if (!partyData) {
+        return message.reply('There\'s no active cake party in this channel to end.');
+      }
       
       // Generate summary of the party
       const summaryEmbed = embedBuilder.createPartySummaryEmbed(partyData);
       await message.channel.send({ embeds: [summaryEmbed] });
       
-      // Remove the party from active parties
+      // Delete the party from the database
+      await roleManager.deleteParty(guildId, channelId);
+      
+      // Remove the party from active parties in memory
       activeParties.delete(partyKey);
       
-      console.log(`Ended cake party in guild ${message.guild.id}, channel ${message.channel.id}`);
+      console.log(`Ended cake party in guild ${guildId}, channel ${channelId}`);
     } catch (error) {
       console.error('Error ending cake party:', error);
       message.channel.send('Sorry, I encountered an error ending the cake party. Please try again.');
@@ -127,19 +165,33 @@ client.on('interactionCreate', async interaction => {
   
   try {
     // Identify the party this interaction belongs to
-    const partyKey = `${interaction.guild.id}-${interaction.channel.id}`;
-    if (!activeParties.has(partyKey)) {
+    const guildId = interaction.guild.id;
+    const channelId = interaction.channel.id;
+    const partyKey = `${guildId}-${channelId}`;
+    
+    // First check memory
+    let partyData = null;
+    if (activeParties.has(partyKey)) {
+      partyData = activeParties.get(partyKey);
+    } else {
+      // Try to load from database
+      partyData = await roleManager.loadPartyData(guildId, channelId);
+      if (partyData) {
+        // Found in database but not in memory, add to memory
+        activeParties.set(partyKey, partyData);
+      }
+    }
+    
+    if (!partyData) {
       return interaction.reply({ 
         content: 'This cake party is no longer active. Start a new one with !startcakeparty [number]', 
         ephemeral: true 
       });
     }
     
-    const partyData = activeParties.get(partyKey);
-    
     // Handle role assignment/removal
     if (interaction.customId === 'leave_role') {
-      const oldRole = roleManager.getUserRole(partyData, interaction.user.id);
+      const oldRole = await roleManager.getUserRole(partyData, interaction.user.id);
       if (!oldRole) {
         return interaction.reply({ 
           content: "You don't currently have a role to leave!", 
@@ -147,7 +199,7 @@ client.on('interactionCreate', async interaction => {
         });
       }
       
-      roleManager.removeUserFromRole(partyData, interaction.user.id);
+      await roleManager.removeUserFromRole(partyData, interaction.user.id);
       await interaction.reply({ 
         content: `You've left your role as a **${oldRole}**!`, 
         ephemeral: true 
@@ -162,12 +214,30 @@ client.on('interactionCreate', async interaction => {
         });
       }
       
-      const oldRole = roleManager.getUserRole(partyData, interaction.user.id);
-      if (oldRole) {
-        roleManager.removeUserFromRole(partyData, interaction.user.id);
-      }
+      // Get current role of the user
+      const oldRole = await roleManager.getUserRole(partyData, interaction.user.id);
       
-      roleManager.assignUserToRole(partyData, interaction.user.id, interaction.customId);
+      // Get the user's Discord username
+      const username = interaction.user.username || interaction.user.displayName || "Unknown User";
+      
+      // Try to assign the user to the new role (pass username as third parameter)
+      const success = await roleManager.assignUserToRole(partyData, interaction.user.id, username, interaction.customId);
+      
+      // If role assignment failed due to role being full
+      if (!success) {
+        // Find the role object to check the max members
+        const roleConfig = Object.values(config.roles).find(r => r.id === interaction.customId);
+        if (roleConfig && roleConfig.maxMembers > 0) {
+          return interaction.reply({
+            content: `Sorry, the **${roleName}** role is full (max ${roleConfig.maxMembers} members)!`,
+            ephemeral: true
+          });
+        }
+        return interaction.reply({
+          content: `Sorry, couldn't assign you to the **${roleName}** role.`,
+          ephemeral: true
+        });
+      }
       
       // Send appropriate response based on whether they switched roles
       if (oldRole) {

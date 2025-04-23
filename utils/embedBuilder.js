@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config');
+const roleManager = require('./roleManager');
 
 /**
  * Creates the help embed for the cake party bot
@@ -38,26 +39,55 @@ function createPartyEmbed(partyData) {
   description += `**🎂 Making ${cakeCount} cake${cakeCount > 1 ? 's' : ''}! 🎂**\n\n`;
   
   Object.values(config.roles).forEach(role => {
-    const memberCount = partyData.roles[role.id]?.length || 0;
-    const memberDisplay = memberCount > 0 ? `(${memberCount})` : '';
+    const members = partyData.roles[role.id] || [];
+    const memberCount = members.length;
+    const maxMembers = role.maxMembers || 0;
+    const memberDisplay = memberCount > 0 ? `(${memberCount}/${maxMembers})` : `(0/${maxMembers})`;
     
-    // Calculate ingredient requirements based on member count
+    // Get role requirements and display
+    const ingredientData = roleManager.calculateRoleIngredients(partyData, role.id);
+    
+    // Calculate ingredient requirements based on member count and cake count
     let ingredientsText = 'No ingredients needed';
     if (role.baseIngredients.length > 0) {
-      const ingredients = role.baseIngredients.map(ingredient => {
-        // Calculate scaled count based on participants and cake count
-        let scaledCount = ingredient.count * cakeCount;
-        if (memberCount > 1) {
-          const additionalCount = Math.floor((memberCount - 1) * role.scalingFactor * ingredient.count * cakeCount);
-          scaledCount += additionalCount;
-        }
-        return `${ingredient.emoji}x${scaledCount}`;
-      });
-      
-      ingredientsText = ingredients.join(' ');
+      if (memberCount === 0) {
+        // Show base requirements per cake
+        const ingredients = role.baseIngredients.map(ingredient => {
+          const totalNeeded = ingredient.count * cakeCount;
+          return `${ingredient.emoji}x${totalNeeded}`;
+        });
+        ingredientsText = ingredients.join(' ');
+      } else {
+        // Show requirements divided among members if applicable
+        const ingredients = ingredientData.map(ingredient => {
+          if (memberCount > 1 && role.scalingFactor === 0) {
+            return `${ingredient.emoji}x${ingredient.countPerMember}/person`;
+          } else {
+            return `${ingredient.emoji}x${ingredient.totalCount}`;
+          }
+        });
+        ingredientsText = ingredients.join(' ');
+      }
     }
     
-    description += `${role.emoji} **${role.name}s** ${memberDisplay} — ${ingredientsText}\n`;
+    // Add tip if available
+    const tipText = role.tip ? `\n    *Tip: ${role.tip}*` : '';
+    
+    // Basic description with role name and membership count
+    description += `${role.emoji} **${role.name}s** ${memberDisplay} — ${ingredientsText}${tipText}\n`;
+    
+    // Add list of usernames if there are members
+    if (memberCount > 0) {
+      description += '    *Assigned to: ';
+      
+      // Get all usernames for this role
+      const usernames = members.map(member => {
+        // Handle both new format (objects with id/username) and old format (string IDs)
+        return typeof member === 'string' ? 'Unknown User' : member.username || 'Unknown User';
+      });
+      
+      description += `${usernames.join(', ')}*\n`;
+    }
   });
   
   description += '\n*Note: Ingredient totals increase based on how many join each role and the number of cakes.*';
@@ -71,13 +101,14 @@ function createPartyEmbed(partyData) {
   
   // Create action row buttons
   const row1 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('join_starter').setLabel('Join Starter').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('join_batterer').setLabel('Join Batterer').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('join_froster').setLabel('Join Froster').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('join_fruitfroster').setLabel('Join Fruit Froster').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('join_leafer').setLabel('Join Leafer').setStyle(ButtonStyle.Primary),
   );
   
   const row2 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('join_leafer').setLabel('Join Leafer').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('join_spreader').setLabel('Join Spreader').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('join_baker').setLabel('Join Baker').setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId('leave_role').setLabel('Leave Role').setStyle(ButtonStyle.Danger),
@@ -106,6 +137,13 @@ function createPartySummaryEmbed(partyData) {
     
     if (members.length > 0) {
       roleBreakdown += `${role.emoji} **${role.name}s**: ${members.length} participant(s)\n`;
+      
+      // Add the list of participants with usernames
+      const usernames = members.map(member => 
+        typeof member === 'string' ? 'Unknown User' : member.username || 'Unknown User'
+      );
+      
+      roleBreakdown += `   *${usernames.join(', ')}*\n`;
     }
   });
   
