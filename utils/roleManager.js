@@ -2,12 +2,14 @@ const config = require('../config');
 
 /**
  * Creates data structure for a new cake party
+ * @param {number} cakeCount The number of cakes to make (default: 1)
  * @returns {Object} Initial party data structure
  */
-function createNewParty() {
+function createNewParty(cakeCount = 1) {
   const partyData = {
     createdAt: Date.now(),
     messageId: null,
+    cakeCount: cakeCount,
     roles: {}
   };
   
