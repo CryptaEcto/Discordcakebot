@@ -72,8 +72,8 @@ client.on('messageCreate', async message => {
         return message.reply('You need to make at least 1 cake! Please try again with a positive number.');
       }
       
-      if (parsedCount > 10) {
-        return message.reply('The maximum number of cakes you can make is 10! Please try again with a smaller number.');
+      if (parsedCount > 50) {
+        return message.reply('The maximum number of cakes you can make is 50! Please try again with a smaller number.');
       }
       
       // Create new party data with specified cake count
