@@ -12,7 +12,7 @@ function createHelpEmbed() {
     .setDescription(
       'Welcome to the Cake Party Bot!\n\n' +
       '**Commands:**\n' +
-      '• **!startcake [number]** - Start a new cake party to make the specified number of cakes (default: 1)\n' +
+      '• **!startcakeparty [number]** - Start a new cake party to make the specified number of cakes\n' +
       '• **!endcake** - End the current cake party and see a summary\n' +
       '• **!cakehelp** - Show this help message\n\n' +
       '**How to participate:**\n' +
@@ -120,7 +120,7 @@ function createPartySummaryEmbed(partyData) {
     .setDescription(`The cake party has ended with ${totalParticipants} total participant(s)! Together you made ${cakeCount} ${cakeCount > 1 ? 'cakes' : 'cake'}!`)
     .addFields(
       { name: 'Role Breakdown', value: roleBreakdown },
-      { name: 'Thanks for participating!', value: `${config.emojis.celebrationcake} Use !startcake [number] to begin another party!` }
+      { name: 'Thanks for participating!', value: `${config.emojis.celebrationcake} Use !startcakeparty [number] to begin another party!` }
     )
     .setFooter({ text: 'Bon appétit! 🍰' });
 }

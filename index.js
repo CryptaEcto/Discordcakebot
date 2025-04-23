@@ -49,7 +49,7 @@ client.on('messageCreate', async message => {
   }
   
   // Process start cake party command
-  if (message.content.startsWith('!startcake')) {
+  if (message.content.startsWith('!startcakeparty')) {
     try {
       // Check if there's already an active party in this channel
       const partyKey = `${message.guild.id}-${message.channel.id}`;
@@ -57,22 +57,27 @@ client.on('messageCreate', async message => {
         return message.reply('There\'s already an active cake party in this channel! Join that one or end it first.');
       }
       
-      // Parse cake count from command (default to 1 if not specified)
-      let cakeCount = 1;
+      // Parse cake count from command (required parameter)
       const args = message.content.split(/\s+/);
-      if (args.length > 1) {
-        const parsedCount = parseInt(args[1]);
-        if (!isNaN(parsedCount) && parsedCount > 0 && parsedCount <= 10) {
-          cakeCount = parsedCount;
-        } else if (parsedCount > 10) {
-          return message.reply('The maximum number of cakes you can make is 10! Please try again with a smaller number.');
-        } else if (parsedCount <= 0) {
-          return message.reply('You need to make at least 1 cake! Please try again with a positive number.');
-        }
+      if (args.length < 2) {
+        return message.reply('Please specify how many cakes to make! Example: `!startcakeparty 3`');
+      }
+      
+      const parsedCount = parseInt(args[1]);
+      if (isNaN(parsedCount)) {
+        return message.reply('Please provide a valid number of cakes! Example: `!startcakeparty 3`');
+      }
+      
+      if (parsedCount <= 0) {
+        return message.reply('You need to make at least 1 cake! Please try again with a positive number.');
+      }
+      
+      if (parsedCount > 10) {
+        return message.reply('The maximum number of cakes you can make is 10! Please try again with a smaller number.');
       }
       
       // Create new party data with specified cake count
-      const partyData = roleManager.createNewParty(cakeCount);
+      const partyData = roleManager.createNewParty(parsedCount);
       activeParties.set(partyKey, partyData);
       
       // Create and send party signup message
@@ -85,7 +90,7 @@ client.on('messageCreate', async message => {
       // Store message ID with party data for reference
       partyData.messageId = sentMessage.id;
       
-      console.log(`Started new cake party in guild ${message.guild.id}, channel ${message.channel.id} with ${cakeCount} cakes`);
+      console.log(`Started new cake party in guild ${message.guild.id}, channel ${message.channel.id} with ${parsedCount} cakes`);
     } catch (error) {
       console.error('Error starting cake party:', error);
       message.channel.send('Sorry, I encountered an error starting the cake party. Please try again.');
@@ -125,7 +130,7 @@ client.on('interactionCreate', async interaction => {
     const partyKey = `${interaction.guild.id}-${interaction.channel.id}`;
     if (!activeParties.has(partyKey)) {
       return interaction.reply({ 
-        content: 'This cake party is no longer active. Start a new one with !startcake', 
+        content: 'This cake party is no longer active. Start a new one with !startcakeparty [number]', 
         ephemeral: true 
       });
     }
