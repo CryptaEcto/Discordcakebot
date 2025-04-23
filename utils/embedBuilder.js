@@ -14,6 +14,7 @@ function createHelpEmbed() {
       'Welcome to the Cake Party Bot!\n\n' +
       '**Commands:**\n' +
       '• **!startcakeparty [number]** - Start a new cake party to make the specified number of cakes\n' +
+      '• **!readysetbake** - Display a party-ready message with helpful tips when all roles are filled\n' +
       '• **!endcake** - End the current cake party and see a summary\n' +
       '• **!cakehelp** - Show this help message\n\n' +
       '**How to participate:**\n' +
@@ -163,8 +164,34 @@ function createPartySummaryEmbed(partyData) {
     .setFooter({ text: 'Bon appétit! 🍰' });
 }
 
+/**
+ * Creates a "Ready to Bake" embed when all required roles are filled
+ * @param {Object} partyData The party data
+ * @returns {EmbedBuilder} The formatted ready to bake embed
+ */
+function createReadyToBakeEmbed(partyData) {
+  const cakeCount = partyData.cakeCount || 1;
+  
+  // Create a fun party message with emojis
+  const embed = new EmbedBuilder()
+    .setColor(config.colors.success)
+    .setTitle(`${config.emojis.tada} We are ready to PARTY! ${config.emojis.partying_face}`)
+    .setDescription(
+      `${config.emojis.sparkles} **Tips for a successful cake party:** ${config.emojis.sparkles}\n\n` +
+      `${config.emojis.lockbox} Batterers don't forget to lock away your milk!\n` +
+      `${config.emojis.lockbox} Frosters don't forget to lock away your eggs!\n\n` +
+      `${config.emojis.cake} Remember to eat so you don't lose focus!\n` +
+      `${config.emojis.heart} Don't be scared to ask any questions, we are here to help each other and have fun!\n\n` +
+      `${config.emojis.confetti} Let's bake ${cakeCount} amazing ${cakeCount > 1 ? 'cakes' : 'cake'} together! ${config.emojis.confetti}`
+    )
+    .setFooter({ text: `${config.emojis.balloon} Let the baking begin! ${config.emojis.balloon}` });
+  
+  return embed;
+}
+
 module.exports = {
   createHelpEmbed,
   createPartyEmbed,
-  createPartySummaryEmbed
+  createPartySummaryEmbed,
+  createReadyToBakeEmbed
 };

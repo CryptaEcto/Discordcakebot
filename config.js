@@ -18,7 +18,19 @@ const emojis = {
   frosting: '<:frosting:1364652782795227227>',
   groundsweetleaf: '<:groundsweetleaf:1364652261766201475>',
   celebrationcake: '<:celebrationcake:1364657276954214522>',
-  lockbox: '<:lockbox:1364652635495465022>'
+  lockbox: '<:lockbox:1364652635495465022>',
+  
+  // Party emojis
+  party: '🥳',
+  cake: '🎂',
+  balloon: '🎈',
+  confetti: '🎊',
+  sparkles: '✨',
+  tada: '🎉',
+  partying_face: '🥳',
+  gift: '🎁',
+  heart: '💖',
+  star2: '🌟'
 };
 
 // Role definitions with base ingredients

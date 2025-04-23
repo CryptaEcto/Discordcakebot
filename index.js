@@ -42,6 +42,21 @@ client.on('ready', async () => {
   client.user.setActivity('!cakehelp', { type: 'PLAYING' });
 });
 
+// Helper function to check if all roles have at least one member
+function checkAllRolesFilled(partyData) {
+  let allFilled = true;
+  
+  Object.values(config.roles).forEach(role => {
+    const members = partyData.roles[role.id] || [];
+    // If any role has no members, we're not ready
+    if (members.length === 0) {
+      allFilled = false;
+    }
+  });
+  
+  return allFilled;
+}
+
 client.on('messageCreate', async message => {
   // Ignore messages from bots
   if (message.author.bot) return;
@@ -54,6 +69,44 @@ client.on('messageCreate', async message => {
     } catch (error) {
       console.error('Error sending help message:', error);
       message.channel.send('Sorry, I had trouble showing the help menu. Please try again.');
+    }
+  }
+  
+  // Process ready set bake command
+  if (message.content === '!readysetbake') {
+    try {
+      const guildId = message.guild.id;
+      const channelId = message.channel.id;
+      const partyKey = `${guildId}-${channelId}`;
+      
+      // Check if there's an active party in this channel
+      let partyData = null;
+      if (activeParties.has(partyKey)) {
+        partyData = activeParties.get(partyKey);
+      } else {
+        // Try to load from database
+        partyData = await roleManager.loadPartyData(guildId, channelId);
+        if (partyData) {
+          // Found in database but not in memory, add to memory
+          activeParties.set(partyKey, partyData);
+        }
+      }
+      
+      if (!partyData) {
+        return message.reply('There\'s no active cake party in this channel!');
+      }
+      
+      // Check if all roles have at least one member
+      if (!checkAllRolesFilled(partyData)) {
+        return message.reply('Not all roles have members yet! Make sure at least one person has joined each role before starting to bake.');
+      }
+      
+      // Send the ready to bake message
+      const readyEmbed = embedBuilder.createReadyToBakeEmbed(partyData);
+      await message.channel.send({ embeds: [readyEmbed] });
+    } catch (error) {
+      console.error('Error processing ready set bake command:', error);
+      message.channel.send('Sorry, I encountered an error. Please try again.');
     }
   }
   
