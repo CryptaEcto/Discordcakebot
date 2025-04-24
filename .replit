@@ -49,3 +49,7 @@ args = "npm list discord.js || npm install discord.js && ls -la && cat index.js 
 
 [deployment]
 run = ["sh", "-c", "node index.js"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80

@@ -1,74 +1,60 @@
-# Cake Party Bot
+# Cake Party Discord Bot
 
-A collaborative Discord bot designed to transform online cake-making into an interactive, engaging social experience. The bot coordinates team roles, tracks member participation, and provides real-time baking coordination tools with dynamic party management.
+A dynamic Discord bot that transforms cake-making into an interactive social experience, enabling seamless team coordination and flexible party management for baking enthusiasts.
 
 ## Features
 
 - Start cake parties with a customizable number of cakes (1-50)
-- Coordinate multiple roles with specialized responsibilities
-- Track user participation and display usernames for each role
-- Calculate ingredient requirements that scale based on participant count
-- Persistent storage of party data using PostgreSQL
-- Interactive embeds and buttons for role selection
-- Special dual-role support for Bakers and Spreaders
-- Mod-only commands for party management
+- Seven different roles with specific ingredient responsibilities
+- Role-based party coordination with visual ingredient requirements
+- Custom emoji support for a visually pleasing interface
+- Persistent data storage using PostgreSQL
+- Special dual-role capability (Baker & Spreader)
+- Party readiness notifications with the `!readysetbake` command
 
 ## Commands
 
-- `!startcakeparty [number]` - Start a new cake party with specified number of cakes (1-50) [Mod only]
-- `!endcake` - End the current cake party in the channel [Mod only]
-- `!readysetbake` - Display a festive "ready to bake" message when minimum role requirements are met [Mod only]
-- `!cakehelp` - Display help information about the bot [Anyone can use]
+- `!startcakeparty [number]` - Start a new cake party with the specified number of cakes (1-50) (Moderator only)
+- `!endcake` - End the current cake party and display a summary (Moderator only)
+- `!readysetbake` - Display a festive message with helpful tips when all required roles are filled (Moderator only)
+- `!cakehelp` - Display help information about the bot (Anyone can use)
 
-## Roles
+## Keeping the Bot Running
 
-1. **Starter** (1 person) - Initiates the cake-making process
-2. **Leafers** (2-4 people) - Prepare the sweetleaf ingredient
-3. **Batterers** (1-3 people) - Mix the cake batter
-4. **Froster** (1 person) - Creates the frosting
-5. **Fruit Frosters** (1-3 people) - Add fruit toppings
-6. **Bakers** (1-3 people) - Bake the cake layers
-7. **Spreaders** (1-3 people) - Apply jelly between layers
+The bot includes a simple web server that responds to HTTP requests. To keep the bot running 24/7 without using Replit Deployments, you can:
 
-Special feature: Users can join as both Baker and Spreader simultaneously!
+1. **Use a ping service** like UptimeRobot or Cron-job.org to send periodic HTTP requests to the bot's web server
+2. **Set up the ping service:**
+   - Sign up for a free account on [UptimeRobot](https://uptimerobot.com/) or similar service
+   - Create a new monitor with type "HTTP(s)"
+   - Use your Replit URL as the target (e.g., `https://your-repl-name.your-username.repl.co`)
+   - Set the monitoring interval to 5 minutes
+   - Save the monitor
+
+The web server will respond to these pings, keeping your bot awake and running even without a paid Replit subscription.
+
+## Alternative Option
+
+For a more reliable solution, consider using Replit Deployments which is designed to keep applications running reliably without the need for external pinging services.
 
 ## Setup
 
-1. Create a Discord bot on the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Clone this repository
-3. Install dependencies with `npm install`
-4. Create a `.env` file using `.env.example` as a template
-5. Add your Discord bot token to the `.env` file
-6. Set up a PostgreSQL database and add the connection URL to the `.env` file
-7. Start the bot with `node index.js`
+1. Install dependencies: `npm install`
+2. Create a `.env` file with your Discord bot token and database credentials:
+   ```
+   DISCORD_TOKEN=your_discord_bot_token
+   DATABASE_URL=your_postgresql_database_url
+   ```
+3. Start the bot: `node index.js`
 
-## Using Custom Emojis from Other Servers
+## Role Breakdown
 
-The bot uses custom emojis to represent ingredients and roles. You can customize these emojis or use emojis from other Discord servers:
+- **Starter** (1 person) - Provides the blueberry, the most important ingredient
+- **Leafers** (2-4 people) - Provide the sweetleaf, a key ingredient
+- **Batterers** (1-3 people) - Mix the batter for the cake
+- **Froster** (1 person) - Prepares the frosting
+- **Fruit Frosters** (1-3 people) - Add apple and blueberry, the starring ingredients
+- **Bakers** (1-3 people) - Bake the cake in the oven
+- **Spreaders** (1-3 people) - Apply jellied cake layers
 
-1. The bot must be invited to any server whose emojis you want to use
-2. To get an emoji's ID, type `\:emoji_name:` in Discord (with the backslash)
-3. Discord will show the full emoji ID in the format `<:name:id>` or `<a:name:id>` for animated emojis
-4. Open `config.js` and add your custom emojis in the emojis section:
-
-```javascript
-const emojis = {
-  // Existing emojis...
-  
-  // Custom server emojis from other servers
-  customCake: '<:fancy_cake:123456789012345678>',
-  sparklyFrost: '<a:sparkle_frost:987654321098765432>', // Animated emoji example
-};
-```
-
-5. You can then use these emojis in role configurations or anywhere else in the bot
-
-## Database Structure
-
-The bot uses a PostgreSQL database with two main tables:
-- `parties` - Stores information about active cake parties
-- `role_assignments` - Tracks which users have which roles
-
-## License
-
-[MIT License](LICENSE)
+Special note: Users can join as both Bakers and Spreaders simultaneously!

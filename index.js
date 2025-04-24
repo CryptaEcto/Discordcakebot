@@ -4,6 +4,7 @@ const embedBuilder = require('./utils/embedBuilder');
 const roleManager = require('./utils/roleManager');
 const config = require('./config');
 const db = require('./utils/database');
+const http = require('http');
 
 // Initialize client with required intents
 // Note: To use custom emojis from other servers, the bot must be a member of those servers
@@ -372,4 +373,17 @@ process.on('SIGINT', () => {
   console.log('Bot is shutting down...');
   client.destroy();
   process.exit(0);
+});
+
+// Create a simple web server to respond to pings
+// This keeps the bot running on Replit even without Deployments
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end(`Cake Party Bot is online! Serving in ${client.guilds.cache.size || 0} guilds.`);
+  console.log('Received ping to keep bot alive: ' + new Date().toISOString());
+});
+
+// Start the web server on port 3000
+server.listen(3000, () => {
+  console.log('Web server is running on port 3000');
 });
