@@ -6,6 +6,8 @@ const config = require('./config');
 const db = require('./utils/database');
 
 // Initialize client with required intents
+// Note: To use custom emojis from other servers, the bot must be a member of those servers
+// No additional intents are needed for custom emojis, but the bot must have been invited to the server
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -57,6 +59,15 @@ function checkAllRolesFilled(partyData) {
   return allFilled;
 }
 
+// Helper function to check if a user has moderator permissions
+function isModerator(member) {
+  // Check if the user has MANAGE_CHANNELS, MANAGE_ROLES, or ADMINISTRATOR permissions
+  // These are typical permissions that moderators would have
+  return member.permissions.has('ManageChannels') || 
+         member.permissions.has('ManageRoles') || 
+         member.permissions.has('Administrator');
+}
+
 client.on('messageCreate', async message => {
   // Ignore messages from bots
   if (message.author.bot) return;
@@ -75,6 +86,11 @@ client.on('messageCreate', async message => {
   // Process ready set bake command
   if (message.content === '!readysetbake') {
     try {
+      // Check if user has moderator permissions
+      if (!isModerator(message.member)) {
+        return message.reply('Sorry, only moderators can use this command!');
+      }
+      
       const guildId = message.guild.id;
       const channelId = message.channel.id;
       const partyKey = `${guildId}-${channelId}`;
@@ -113,6 +129,11 @@ client.on('messageCreate', async message => {
   // Process start cake party command
   if (message.content.startsWith('!startcakeparty')) {
     try {
+      // Check if user has moderator permissions
+      if (!isModerator(message.member)) {
+        return message.reply('Sorry, only moderators can use this command!');
+      }
+      
       // Check if there's already an active party in this channel
       const guildId = message.guild.id;
       const channelId = message.channel.id;
@@ -174,6 +195,11 @@ client.on('messageCreate', async message => {
   // Process end cake party command
   if (message.content === '!endcake') {
     try {
+      // Check if user has moderator permissions
+      if (!isModerator(message.member)) {
+        return message.reply('Sorry, only moderators can use this command!');
+      }
+      
       const guildId = message.guild.id;
       const channelId = message.channel.id;
       const partyKey = `${guildId}-${channelId}`;
@@ -251,6 +277,9 @@ client.on('interactionCreate', async interaction => {
           ephemeral: true 
         });
       }
+      
+      // Check if it's a Baker & Spreader dual role
+      const isBakerAndSpreader = oldRole.includes('&');
       
       await roleManager.removeUserFromRole(partyData, interaction.user.id);
       await interaction.reply({ 

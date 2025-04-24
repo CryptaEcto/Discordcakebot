@@ -221,10 +221,10 @@ async function getPartyRoles(partyId) {
 }
 
 /**
- * Get a user's role in a party
+ * Get a user's role(s) in a party
  * @param {number} partyId Party ID
  * @param {string} userId User ID
- * @returns {Promise<string|null>} Role ID or null
+ * @returns {Promise<string|string[]|null>} Role ID(s) or null
  */
 async function getUserRole(partyId, userId) {
   try {
@@ -237,7 +237,13 @@ async function getUserRole(partyId, userId) {
       return null;
     }
     
-    return result.rows[0].role_id;
+    // For backward compatibility, if there's only one role, return it directly
+    if (result.rows.length === 1) {
+      return result.rows[0].role_id;
+    }
+    
+    // If there are multiple roles (Baker & Spreader case), return an array of role IDs
+    return result.rows.map(row => row.role_id);
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;

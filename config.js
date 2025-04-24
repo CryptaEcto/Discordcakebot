@@ -1,26 +1,58 @@
 // Configuration for the Cake Party Bot
 
-// Custom emojis for ingredients and roles
+/**
+ * Custom emojis for ingredients and roles
+ * 
+ * Custom Discord emojis format: 
+ * - Regular emojis: <:name:id>
+ * - Animated emojis: <a:name:id>
+ * 
+ * To use emojis from other servers, add them here with their full ID.
+ * The bot must be in those servers to use their emojis.
+ * 
+ * You can get emoji IDs by typing \:emoji_name: in Discord
+ * (add a backslash before the emoji name)
+ */
 const emojis = {
-  apple: '<:apple:1364650758775247059>',
-  blueberry: '<:blueberry:1364650527513645209>',
-  sweetleaf: '<:sweetleaf:1364650657184747571>',
-  milk: '<:milk:1364650830095192186>',
-  egg: '<:egg:1364651054725337261>',
-  flour: '<:flour:1364651107497803796>',
-  butter: '<:butter:1364651171649814618>',
-  sugar: '<:sugar:1364651294794448987>',
-  star: '<:star:1364651827886555146>',
-  cakebatter: '<:cakebatter:1364653780112510996>',
-  fruitfrosting: '<:fruitfrosting:1364653475811561603>',
-  jelliedcakelayer: '<:jelliedcakelayer:1364653208777003048>',
-  cakelayer: '<:cakelayer:1364653062437736620>',
-  frosting: '<:frosting:1364652782795227227>',
-  groundsweetleaf: '<:groundsweetleaf:1364652261766201475>',
-  celebrationcake: '<:celebrationcake:1364657276954214522>',
-  lockbox: '<:lockbox:1364652635495465022>',
+  // New server emojis
+  apple: '<:Apple:1364749232204152873>',
+  blueberry: '<:Blueberry:1364750405338271835>',
+  sweetleaf: '<:Sweetleaf:1364749235547017246>',
+  milk: '<:Milk:1364749224599879780>',
+  egg: '<:Egg:1364749064226209904>',
+  flour: '<:Flour:1364749221978177617>',
+  butter: '<:Butter:1364749228827607141>',
+  sugar: '<:Sugar:1364749093800513678>',
+  star: '<:Star:1364749225799454801>',
+  cakebatter: '<:Cakebatter:1364749218467811338>',
+  fruitfrosting: '<:Fruitfrosting:1364749220745187338>',
+  jelliedcakelayer: '<:Jelliedcakelayer:1364749526883369001>',
+  cakelayer: '<:Cakelayer:1364749223303843842>',
+  frosting: '<:Frosting:1364749219474309242>',
+  groundsweetleaf: '<:Groundsweetleaf:1364749217595129968>',
+  celebrationcake: '<:Celebrationcake:1364749415386058785>',
+  lockbox: '<:Lockbox:1364749337246302230>',
   
-  // Party emojis
+  // Original server emojis (kept as backup)
+  original_apple: '<:apple:1364650758775247059>',
+  original_blueberry: '<:blueberry:1364650527513645209>',
+  original_sweetleaf: '<:sweetleaf:1364650657184747571>',
+  original_milk: '<:milk:1364650830095192186>',
+  original_egg: '<:egg:1364651054725337261>',
+  original_flour: '<:flour:1364651107497803796>',
+  original_butter: '<:butter:1364651171649814618>',
+  original_sugar: '<:sugar:1364651294794448987>',
+  original_star: '<:star:1364651827886555146>',
+  original_cakebatter: '<:cakebatter:1364653780112510996>',
+  original_fruitfrosting: '<:fruitfrosting:1364653475811561603>',
+  original_jelliedcakelayer: '<:jelliedcakelayer:1364653208777003048>',
+  original_cakelayer: '<:cakelayer:1364653062437736620>',
+  original_frosting: '<:frosting:1364652782795227227>',
+  original_groundsweetleaf: '<:groundsweetleaf:1364652261766201475>',
+  original_celebrationcake: '<:celebrationcake:1364657276954214522>',
+  original_lockbox: '<:lockbox:1364652635495465022>',
+  
+  // Standard Unicode emojis
   party: '🥳',
   cake: '🎂',
   balloon: '🎈',
@@ -40,7 +72,7 @@ const roles = {
     name: 'Starter',
     emoji: emojis.celebrationcake,
     baseIngredients: [
-      { emoji: emojis.blueberry, count: 1 }
+      { emoji: emojis.star + ' ' + emojis.blueberry, count: 1 }
     ],
     maxMembers: 1,
     tip: 'Also needs the Celebration Cake Recipe',
@@ -76,7 +108,7 @@ const roles = {
     name: 'Fruit Froster',
     emoji: emojis.fruitfrosting,
     baseIngredients: [
-      { emoji: emojis.apple + '/' + emojis.blueberry, count: 3 },
+      { emoji: emojis.star + ' ' + emojis.apple + '/' + emojis.star + ' ' + emojis.blueberry, count: 3 },
       { emoji: emojis.sugar, count: 3 }
     ],
     maxMembers: 3,
@@ -98,6 +130,7 @@ const roles = {
     emoji: emojis.jelliedcakelayer,
     baseIngredients: [],
     maxMembers: 3,
+    tip: 'You can also join as a Baker at the same time!',
     scalingFactor: 0
   },
   baker: {
@@ -106,6 +139,7 @@ const roles = {
     emoji: emojis.cakelayer,
     baseIngredients: [],
     maxMembers: 3,
+    tip: 'You can also join as a Spreader at the same time!',
     scalingFactor: 0
   }
 };

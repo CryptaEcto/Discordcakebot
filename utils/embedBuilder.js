@@ -13,14 +13,14 @@ function createHelpEmbed() {
     .setDescription(
       'Welcome to the Cake Party Bot!\n\n' +
       '**Commands:**\n' +
-      '• **!startcakeparty [number]** - Start a new cake party to make the specified number of cakes\n' +
-      '• **!readysetbake** - Display a party-ready message with helpful tips when all roles are filled\n' +
-      '• **!endcake** - End the current cake party and see a summary\n' +
-      '• **!cakehelp** - Show this help message\n\n' +
+      '• **!startcakeparty [number]** - (Mod only) Start a new cake party to make the specified number of cakes\n' +
+      '• **!readysetbake** - (Mod only) Display a party-ready message with helpful tips when all roles are filled\n' +
+      '• **!endcake** - (Mod only) End the current cake party and see a summary\n' +
+      '• **!cakehelp** - Show this help message (anyone can use)\n\n' +
       '**How to participate:**\n' +
       '• Click a role button to join that role\n' +
       '• Each role requires specific ingredients\n' +
-      '• Ingredient requirements increase based on how many people join each role and the number of cakes\n' +
+      '• Ingredient requirements can increase/decrease based on how many people join each role and the number of cakes\n' +
       '• Click **Leave Role** to give up your current role'
     )
     .setFooter({ text: 'Let\'s get baking! 🧁' });
@@ -91,7 +91,7 @@ function createPartyEmbed(partyData) {
     }
   });
   
-  description += '\n*Note: Ingredient totals increase based on how many join each role and the number of cakes.*';
+  description += '\n*Note: Ingredient requirements can increase/decrease based on how many join each role and the number of cakes.*';
   
   // Create embed
   const embed = new EmbedBuilder()

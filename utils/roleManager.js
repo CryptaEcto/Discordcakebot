@@ -97,19 +97,42 @@ async function assignUserToRole(partyData, userId, username, roleId) {
   }
   
   try {
-    // Remove user from any existing role first
-    await removeUserFromRole(partyData, userId);
+    // Special case for Baker and Spreader - they can be joined at the same time
+    const isBakerOrSpreader = roleId === 'join_baker' || roleId === 'join_spreader';
+    const otherDualRole = roleId === 'join_baker' ? 'join_spreader' : 'join_baker';
+    
+    // Check if user is already in the other dual role (baker/spreader)
+    let isInOtherDualRole = false;
+    if (isBakerOrSpreader) {
+      const otherRoleMembers = partyData.roles[otherDualRole] || [];
+      isInOtherDualRole = otherRoleMembers.some(member => 
+        typeof member === 'string' ? member === userId : member.id === userId
+      );
+    }
+    
+    // For roles other than Baker/Spreader OR if not already in the other dual role,
+    // remove from all current roles except the dual role
+    if (!isBakerOrSpreader || !isInOtherDualRole) {
+      // Remove from roles except the baker/spreader dual role if needed
+      await removeUserFromRole(partyData, userId, isBakerOrSpreader ? otherDualRole : null);
+    }
     
     // Add user to new role in the database if we have a party ID
     if (partyData.id) {
       await db.assignRole(partyData.id, userId, username, roleId);
     }
     
-    // Update the in-memory data
-    partyData.roles[roleId].push({
-      id: userId,
-      username: username
-    });
+    // Update the in-memory data - only add if not already in this role
+    const isAlreadyInRole = partyData.roles[roleId].some(member => 
+      typeof member === 'string' ? member === userId : member.id === userId
+    );
+    
+    if (!isAlreadyInRole) {
+      partyData.roles[roleId].push({
+        id: userId,
+        username: username
+      });
+    }
     
     return true;
   } catch (error) {
@@ -134,22 +157,48 @@ async function assignUserToRole(partyData, userId, username, roleId) {
 }
 
 /**
- * Removes a user from their current role
+ * Removes a user from their current role(s)
  * @param {Object} partyData The cake party data
  * @param {string} userId The Discord user ID
+ * @param {string|null} preserveRoleId Optional role ID to preserve (not remove)
  * @returns {Promise<boolean>} Success status
  */
-async function removeUserFromRole(partyData, userId) {
+async function removeUserFromRole(partyData, userId, preserveRoleId = null) {
   let removed = false;
   
   try {
-    // Remove from database if we have a party ID
+    // If we're preserving a role (for the Baker/Spreader dual role case)
+    // then we need to handle the database differently
     if (partyData.id) {
-      await db.removeRole(partyData.id, userId);
+      if (preserveRoleId) {
+        // Remove from database except the preserved role
+        // This is complex with SQL, so we'll just delete all and re-add the one we want to keep
+        await db.removeRole(partyData.id, userId);
+        
+        // Check if user is in the preserved role and get their username
+        const preservedRole = partyData.roles[preserveRoleId] || [];
+        const userInPreservedRole = preservedRole.find(user => 
+          typeof user === 'string' ? user === userId : user.id === userId
+        );
+        
+        // If they're in the preserved role, re-add it
+        if (userInPreservedRole) {
+          const username = typeof userInPreservedRole === 'string' ? 'Unknown User' : userInPreservedRole.username;
+          await db.assignRole(partyData.id, userId, username, preserveRoleId);
+        }
+      } else {
+        // No role to preserve, remove from all
+        await db.removeRole(partyData.id, userId);
+      }
     }
     
     // Update the in-memory data
     Object.keys(partyData.roles).forEach(roleId => {
+      // Skip the role we want to preserve
+      if (preserveRoleId && roleId === preserveRoleId) {
+        return;
+      }
+      
       // Handle both new format (objects with id/username) and old format (string IDs)
       const userIndex = partyData.roles[roleId].findIndex(user => 
         typeof user === 'string' ? user === userId : user.id === userId
@@ -167,6 +216,11 @@ async function removeUserFromRole(partyData, userId) {
     
     // Update in-memory data anyway
     Object.keys(partyData.roles).forEach(roleId => {
+      // Skip the role we want to preserve
+      if (preserveRoleId && roleId === preserveRoleId) {
+        return;
+      }
+      
       const userIndex = partyData.roles[roleId].findIndex(user => 
         typeof user === 'string' ? user === userId : user.id === userId
       );
@@ -182,22 +236,19 @@ async function removeUserFromRole(partyData, userId) {
 }
 
 /**
- * Gets the current role of a user
+ * Gets the current role(s) of a user
  * @param {Object} partyData The cake party data
  * @param {string} userId The Discord user ID
- * @returns {Promise<string|null>} The role name, or null if no role
+ * @returns {Promise<string|null>} The role name(s), or null if no role
  */
 async function getUserRole(partyData, userId) {
   try {
-    // Try to get from database if we have a party ID
-    if (partyData.id) {
-      const roleId = await db.getUserRole(partyData.id, userId);
-      if (roleId) {
-        return config.roleMap[roleId];
-      }
-    }
+    // Check if user is in both Baker and Spreader roles
+    const roles = [];
+    const bakerRole = 'join_baker';
+    const spreaderRole = 'join_spreader';
     
-    // Fallback to in-memory check
+    // Check in-memory data for the roles the user has
     for (const roleId in partyData.roles) {
       // Handle both new format (objects with id/username) and old format (string IDs)
       const hasUser = partyData.roles[roleId].some(user => 
@@ -205,26 +256,54 @@ async function getUserRole(partyData, userId) {
       );
       
       if (hasUser) {
-        return config.roleMap[roleId];
+        roles.push(roleId);
       }
     }
     
-    return null;
+    // If user has no roles
+    if (roles.length === 0) {
+      return null;
+    }
+    
+    // If user has both Baker and Spreader roles
+    const hasBakerRole = roles.includes(bakerRole);
+    const hasSpreaderRole = roles.includes(spreaderRole);
+    
+    if (hasBakerRole && hasSpreaderRole) {
+      return `${config.roleMap[bakerRole]} & ${config.roleMap[spreaderRole]}`;
+    }
+    
+    // Otherwise return the first role found
+    return config.roleMap[roles[0]];
   } catch (error) {
     console.error('Error getting user role:', error);
     
     // Fallback to in-memory check
+    const roles = [];
+    
     for (const roleId in partyData.roles) {
       const hasUser = partyData.roles[roleId].some(user => 
         typeof user === 'string' ? user === userId : user.id === userId
       );
       
       if (hasUser) {
-        return config.roleMap[roleId];
+        roles.push(roleId);
       }
     }
     
-    return null;
+    if (roles.length === 0) {
+      return null;
+    }
+    
+    // Check for the special Baker & Spreader dual role case
+    const hasBakerRole = roles.includes('join_baker');
+    const hasSpreaderRole = roles.includes('join_spreader');
+    
+    if (hasBakerRole && hasSpreaderRole) {
+      return `${config.roleMap['join_baker']} & ${config.roleMap['join_spreader']}`;
+    }
+    
+    return config.roleMap[roles[0]];
   }
 }
 
