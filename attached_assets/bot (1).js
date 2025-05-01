@@ -28,6 +28,24 @@ const emojis = {
   lockbox: '<:lockbox:1364652635495465022>'
 };
 
+const roles = ['Batterer', 'Baker', 'Spreader'];
+const maxRoleCounts = {
+  Batterer: 3,
+  Baker: 3,
+  Spreader: 3,
+};
+
+const roleAssignments = {
+  Batterer: [],
+  Baker: [],
+  Spreader: [],
+  Starter: null,
+};
+
+function allRolesFilled() {
+  return roles.every(role => roleAssignments[role].length > 0);
+}
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -88,10 +106,47 @@ client.on('interactionCreate', async interaction => {
     join_baker: 'Baker'
   };
 
+  const userId = interaction.user.id;
+  const member = await interaction.guild.members.fetch(userId);
+  const displayName = member.displayName;
+
   if (interaction.customId === 'leave_role') {
-    await interaction.reply({ content: `You've left your role!`, ephemeral: true });
+    // Remove user from any role they may have joined
+    Object.keys(roleAssignments).forEach(role => {
+      roleAssignments[role] = roleAssignments[role].filter(id => id !== userId);
+    });
+
+    await interaction.reply({ content: `${displayName}, you've left your role!`, ephemeral: true });
   } else if (roleMap[interaction.customId]) {
-    await interaction.reply({ content: `You've joined as a **${roleMap[interaction.customId]}**!`, ephemeral: true });
+    const roleName = roleMap[interaction.customId];
+
+    if (!roles.includes(roleName)) {
+      return interaction.reply({ content: 'Invalid role.', ephemeral: true });
+    }
+
+    // If Starter is not already assigned, assign this user to Starter
+    if (!roleAssignments.Starter) {
+      roleAssignments.Starter = userId;
+    }
+
+    // Restrict Baker and Spreader to 1 member until all roles are filled
+    if (!allRolesFilled() && (roleName === 'Baker' || roleName === 'Spreader')) {
+      if (roleAssignments[roleName].length >= 1) {
+        return interaction.reply({ content: `Only one person can join as ${roleName} until all roles have at least one member.`, ephemeral: true });
+      }
+    }
+
+    // Enforce role cap for each role
+    if (roleAssignments[roleName].length >= maxRoleCounts[roleName]) {
+      return interaction.reply({ content: `The ${roleName} role is full.`, ephemeral: true });
+    }
+
+    // Add the user to the appropriate role
+    if (!roleAssignments[roleName].includes(userId)) {
+      roleAssignments[roleName].push(userId);
+    }
+
+    await interaction.reply({ content: `${displayName} has joined as a **${roleName}**!`, ephemeral: false });
   }
 });
 
