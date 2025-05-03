@@ -1,0 +1,16 @@
+{
+  "server_id_123": {
+    "message_id": 1111111111,
+    "channel_id": 2222222222,
+    "roles": {
+      "starter": ["user_id_1"],
+      "batterer": ["user_id_2"],
+      "froster": ["user_id_3", "user_id_4"],
+      "fruit froster": ["user_id_5"],
+      "leafer": ["user_id_6"],
+      "spreader": ["user_id_7"],
+      "baker": ["user_id_8"]
+    }
+  }
+}
+
